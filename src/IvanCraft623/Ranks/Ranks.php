@@ -35,6 +35,7 @@ use pocketmine\event\player\PlayerJoinEvent;
 use pocketmine\command\{Command, CommandSender};
 use pocketmine\utils\Config;
 
+use IvanCraft623\Ranks\Form\{CustomForm, Form, ModalForm, SimpleForm};
 use IvanCraft623\Ranks\TempRanks;
 
 class Ranks extends PluginBase implements Listener {
@@ -65,11 +66,15 @@ class Ranks extends PluginBase implements Listener {
 				if(isset($args[0])) {
 					switch ($args[0]) {
 						case 'claim':
-							$this->claimCodeUI($sender);
+							if ($sender instanceof Player) {
+								$this->claimCodeUI($sender);
+							} else {
+								$sender->sendMessage("§cYou can only use this command in the game!");
+							}
 						break;
 
 						case 'manage': //TODO!
-							if (!$sender->hasPermission("mod.endergames")) {
+							if (!$sender->hasPermission("rank.cmd.manage")) {
 								$sender->sendMessage("§cYou dont have permission to use this command!");
 								return true;
 							}
@@ -78,7 +83,7 @@ class Ranks extends PluginBase implements Listener {
 
 						case 'settemprank':
 							$PPerms = $this->getServer()->getPluginManager()->getPlugin("PurePerms");
-							if (!$sender->hasPermission("mod.endergames")) {
+							if (!$sender->hasPermission("rank.cmd.settemprank")) {
 								$sender->sendMessage("§cYou dont have permission to use this command!");
 								return true;
 							}
@@ -141,13 +146,13 @@ class Ranks extends PluginBase implements Listener {
     								);
 								}
 							} else {
-								$sender->sendMessage("§eUse:§a /ranks settemprank [Player] [Rank] <Time in days>");
+								$sender->sendMessage("§eUse:§a /ranks settemprank <player> <rank> <time in days>");
 							}
 						break;
 
 						case 'createcode':						
 							$PPerms = $this->getServer()->getPluginManager()->getPlugin("PurePerms");
-							if (!$sender->hasPermission("mod.endergames")) {
+							if (!$sender->hasPermission("rank.cmd.createcode")) {
 								$sender->sendMessage("§cYou dont have permission to use this command!");
 								return true;
 							}
@@ -155,11 +160,11 @@ class Ranks extends PluginBase implements Listener {
 								if ($sender instanceof Player) {
 									$this->createCode1UI($sender);
 								} else {
-									$sender->sendMessage("§eUse:§a /ranks createcode [Code] [Rank] <Max uses> <Rank Exp Time>");
+									$sender->sendMessage("§eUse:§a /ranks createcode <code] <rank> <max uses> <time in days>");
 								}
 							} else {
 								if (!isset($args[4])) {
-									$sender->sendMessage("§eUse:§a /ranks createcode [Code] [Rank] <Max uses> <Rank Exp Time>");
+									$sender->sendMessage("§eUse:§a /ranks createcode <code] <rank> <max uses> <time in days>");
 									return true;
 								} else {
 									if ($args[1] === "random") {
@@ -204,7 +209,7 @@ class Ranks extends PluginBase implements Listener {
 						break;
 
 						case 'deletecode':
-							if (!$sender->hasPermission("mod.endergames")) {
+							if (!$sender->hasPermission("rank.cmd.deletecode")) {
 								$sender->sendMessage("§cYou dont have permission to use this command!");
 								return true;
 							}
@@ -225,14 +230,14 @@ class Ranks extends PluginBase implements Listener {
 						break;
 						
 						default:
-							if ($sender->hasPermission("mod.endergames")) {
+							if ($sender->hasPermission("rank.cmd.settemprank")) {
 								$sender->sendMessage(
 									"§a---- §bRank Commands §a----"."\n"."\n".
-									"§eUse:§a /ranks settemprank [Player] §7(open an ui to set temp rank)"."\n".
-									"§eUse:§a /ranks createcode (create a code to claim a rank)"."\n".
-									"§eUse:§a /ranks deletecode (delete a code)"."\n".
-									"§eUse:§a /ranks manage §7(open an ui to manage)"."\n"."\n".
-									"§eUse:§a /ranks claim §7(claim a rank)"
+									"§eUse:§a /ranks settemprank §7(Set a TempRank to a player.)"."\n".
+									"§eUse:§a /ranks createcode §7(Create a code to claim a rank.)"."\n".
+									"§eUse:§a /ranks deletecode §7(Delete a code.)"."\n".
+									"§eUse:§a /ranks manage §7(Coming soon...)"."\n"."\n".
+									"§eUse:§a /ranks claim §7(Open an UI to claim a code.)"
 								);
 							} else {
 								$sender->sendMessage(
@@ -243,7 +248,7 @@ class Ranks extends PluginBase implements Listener {
 						break;
 					}
 				} else {
-					if ($sender->hasPermission("mod.endergames")) {
+					if ($sender->hasPermission("rank.cmd.settemprank")) {
 						$sender->sendMessage(
 							"§a---- §bRank Commands §a----"."\n"."\n".
 							"§eUse:§a /ranks settemprank [Player] §7(open an ui to set temp rank)"."\n".
@@ -265,8 +270,7 @@ class Ranks extends PluginBase implements Listener {
 	}
 
 	public function claimCodeUI($sender) {
-        $api = $this->getServer()->getPluginManager()->getPlugin("FormAPI");
-        $form = $api->createCustomForm(function (Player $sender, array $data = null) {
+        $form =  new CustomForm(function (Player $sender, array $data = null) {
             if ($data === null){
                 return true;
             }
@@ -355,8 +359,7 @@ class Ranks extends PluginBase implements Listener {
     }
 
 	public function ListCodesUI($sender){
-		$api = $this->getServer()->getPluginManager()->getPlugin("FormAPI");
-		$form = $api->createSimpleForm(function (Player $sender, $data = null){
+		$form =  new SimpleForm(function (Player $sender, $data = null) {
 			$target = $data;
 			if($target === null){
 				return true;
@@ -375,8 +378,7 @@ class Ranks extends PluginBase implements Listener {
 	}
 
 	public function InfoCodeUI($sender){
-        $api = $this->getServer()->getPluginManager()->getPlugin("FormAPI");
-        $form = $api->createSimpleForm(function (Player $sender, int $data = null) {
+        $form =  new SimpleForm(function (Player $sender, int $data = null) {
             $result = $data;
             if($result === null){
                 return true;
@@ -411,8 +413,7 @@ class Ranks extends PluginBase implements Listener {
     }
 
 	public function createCode1UI($sender) {
-        $api = $this->getServer()->getPluginManager()->getPlugin("FormAPI");
-        $form = $api->createCustomForm(function (Player $sender, array $data = null) {
+        $form =  new CustomForm(function (Player $sender, $data = null) {
             if($data === null){
                 return true;
             }
@@ -435,8 +436,7 @@ class Ranks extends PluginBase implements Listener {
     }
 
     public function openRanksListUI($player){
-		$api = $this->getServer()->getPluginManager()->getPlugin("FormAPI");
-		$form = $api->createSimpleForm(function (Player $player, $data = null){
+		$form =  new SimpleForm(function (Player $player, $data = null) {
 			$target = $data;
 			if($target === null){
 				return true;
@@ -455,8 +455,7 @@ class Ranks extends PluginBase implements Listener {
 	}
 
 	public function createCode2UI($sender) {
-        $api = $this->getServer()->getPluginManager()->getPlugin("FormAPI");
-        $form = $api->createCustomForm(function (Player $sender, array $data = null) {
+        $form =  new CustomForm(function (Player $sender, array $data = null) {
             if($data === null){
                 return true;
             }
