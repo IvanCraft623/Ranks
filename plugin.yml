@@ -1,11 +1,20 @@
 ---
 name: Ranks
 author: IvanCraft623
-version: 0.0.1
+version: 1.0.0
 main: IvanCraft623\Ranks\Ranks
 api: 3.0.0
 depend: [PurePerms]
 commands:
   ranks:
-    description: temp ranks command! Plugin by (Twitter: @IvanCraft623)
+    description: "temp ranks command! Plugin by (Twitter: @IvanCraft623)"
+permissions:
+  rank.cmd.settemprank:
+    description: Use rank settemprank command
+  rank.cmd.createcode:
+    description: Use rank createcode command
+  rank.cmd.deletecode:
+    description: Use rank deletecode command
+  rank.cmd.manage:
+    description: Use rank manage command
 ...
