@@ -1,5 +1,5 @@
 # Ranks
-Ranks by IvanCraft623 is a plugin that with conjunction of [PurePerms](https://github.com/poggit-orphanage/PurePerms/) allow set TempRanks to players.
+Ranks by IvanCraft623 is a plugin that with conjunction of [PurePerms](https://github.com/poggit-orphanage/PurePerms/) allow set Temporal Ranks to players.
 It is necessary have the [PurePerms](https://github.com/poggit-orphanage/PurePerms/) plugin!
 
 # Commands
