@@ -7,5 +7,5 @@ api: 3.0.0
 depend: [PurePerms]
 commands:
   ranks:
-    description: temp ranks command!
+    description: temp ranks command! Plugin by (Twitter: @IvanCraft623)
 ...
