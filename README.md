@@ -31,5 +31,5 @@ mode: setlastrank
 # Features
 
 - You can set Temporal Ranks to players!
-- You can add codes to claim ranks!
+- You can add codes to claim temporal ranks!
 - If when you are creating a code you set code "random" a random code will be generated
