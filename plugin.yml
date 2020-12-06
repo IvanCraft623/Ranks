@@ -1,7 +1,7 @@
 ---
 name: Ranks
 author: IvanCraft623
-version: 1.0.0
+version: 1.0.2
 main: IvanCraft623\Ranks\Ranks
 api: 3.0.0
 depend: [PurePerms]
