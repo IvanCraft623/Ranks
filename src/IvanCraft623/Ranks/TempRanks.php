@@ -28,6 +28,7 @@ namespace IvanCraft623\Ranks;
 
 use IvanCraft623\Ranks\Ranks;
 
+use pocketmine\Player;
 use pocketmine\scheduler\Task;
 use pocketmine\level\Level;
 use pocketmine\utils\{Config, TextFormat as TE};
@@ -50,10 +51,14 @@ class TempRanks extends Task {
 	 */
 
 	public function onRun(Int $currentTick){
-		foreach ($this->plugin->getServer()->getOnlinePlayers() as $player) {
+		$rankInfo = $this->plugin->db->query("SELECT * FROM rankPlayers;");
+		$i = -1;
+		while ($resultArr = $rankInfo->fetchArray(SQLITE3_ASSOC)) {
 			$PPerms = $this->plugin->getServer()->getPluginManager()->getPlugin("PurePerms");
-			$playerName = strtolower($player->getName());
-			$rankInfo = $this->plugin->db->query("SELECT * FROM rankPlayers WHERE player = '$playerName';");
+			$j = $i + 1;
+			$rankPlayer = $resultArr['player'];
+			$player = $PPerms->getPlayer($rankPlayer);
+			$rankInfo = $this->plugin->db->query("SELECT * FROM rankPlayers WHERE player = '$rankPlayer';");
 			$array = $rankInfo->fetchArray(SQLITE3_ASSOC);
 			if (empty($array)) return;
 			$now = time();
@@ -66,14 +71,20 @@ class TempRanks extends Task {
 				} elseif ($this->plugin->getConfig()->get("mode") === "setlastrank") {
 					$newRank = $PPerms->getGroup($lastRank);
 				} else { //This error will show as flow
-					$this->plugin->getLogger()->critical("{$this->plugin->getConfig()->get("mode")} is not a valid value in config.yml, correct it, it has not been possible to remove the time range to {$playerName}");
-					$player->sendMessage("§cAn unexpected error has occurred in the Ranks plugin configuration, contact an Admin to correct the error...");
+					$this->plugin->getLogger()->critical("{$this->plugin->getConfig()->get("mode")} is not a valid value in config.yml, correct it, it has not been possible to remove the time range to {$rankPlayer}");
+					if ($player instanceof Player) {
+						$player->sendMessage("§cAn unexpected error has occurred in the Ranks plugin configuration, contact an Admin to correct the error...");
+					}
 					return;
 				}
-				$player->sendMessage("§eYour §b{$nowRank} §erank has expired!");
+				if ($player instanceof Player) {
+					$player->sendMessage("§eYour §b{$nowRank} §erank has expired!");
+				}
+				//$this->plugin->getLogger()->info("§aPlayer §b{$rankPlayer}§a Rank: §b{$nowRank} §ahas expired!");
 				$PPerms->setGroup($player, $newRank);
-				$this->plugin->db->query("DELETE FROM rankPlayers WHERE player = '$playerName';");
+				$this->plugin->db->query("DELETE FROM rankPlayers WHERE player = '$rankPlayer';");
 			}
+			$i = $i + 1;
 		}
 	}
 }
