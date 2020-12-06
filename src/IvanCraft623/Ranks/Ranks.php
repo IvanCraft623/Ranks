@@ -42,6 +42,8 @@ class Ranks extends PluginBase implements Listener {
 
 	private static  $instance = null;
 
+	public  $db = [];
+
 	public $codeName = [];
 
 	public $targetRank = [];
@@ -160,11 +162,11 @@ class Ranks extends PluginBase implements Listener {
 								if ($sender instanceof Player) {
 									$this->createCode1UI($sender);
 								} else {
-									$sender->sendMessage("§eUse:§a /ranks createcode <code] <rank> <max uses> <time in days>");
+									$sender->sendMessage("§eUse:§a /ranks createcode <code> <rank> <max uses> <time in days>");
 								}
 							} else {
 								if (!isset($args[4])) {
-									$sender->sendMessage("§eUse:§a /ranks createcode <code] <rank> <max uses> <time in days>");
+									$sender->sendMessage("§eUse:§a /ranks createcode <code> <rank> <max uses> <time in days>");
 									return true;
 								} else {
 									if ($args[1] === "random") {
@@ -228,21 +230,33 @@ class Ranks extends PluginBase implements Listener {
 								}
 							}
 						break;
+
+						case 'credits':
+							$sender->sendMessage(
+								"§a---- §bRanks credits §a----"."\n"."\n".
+								"§eThis server is using Ranks by IvanCraft623"."\n".
+								"§eTwitter: §b@IvanCraft623"."\n".
+								"§eIvanCraft623 server:"."\n".
+								"§bendergames.ddns.net:25331"
+							);
+						break;
 						
 						default:
 							if ($sender->hasPermission("rank.cmd.settemprank")) {
 								$sender->sendMessage(
-									"§a---- §bRank Commands §a----"."\n"."\n".
+									"§a---- §bRanks Commands §a----"."\n"."\n".
 									"§eUse:§a /ranks settemprank §7(Set a TempRank to a player.)"."\n".
 									"§eUse:§a /ranks createcode §7(Create a code to claim a rank.)"."\n".
 									"§eUse:§a /ranks deletecode §7(Delete a code.)"."\n".
 									"§eUse:§a /ranks manage §7(Coming soon...)"."\n"."\n".
-									"§eUse:§a /ranks claim §7(Open an UI to claim a code.)"
+									"§eUse:§a /ranks claim §7(Open an UI to claim a code.)"."\n".
+									"§eUse:§a /ranks credits §7(view credits)"
 								);
 							} else {
 								$sender->sendMessage(
-									"§a---- §bSurvival Commands §a----"."\n"."\n".
-									"§eUse:§a /ranks claim §7(claim a rank)"
+									"§a---- §bRanks Commands §a----"."\n"."\n".
+									"§eUse:§a /ranks claim §7(claim a rank)"."\n".
+									"§eUse:§a /ranks credits §7(view credits)"
 								);
 							}
 						break;
@@ -288,6 +302,14 @@ class Ranks extends PluginBase implements Listener {
 
     public function claimCode ($sender, $codeName) {
     	$PPerms = $this->getServer()->getPluginManager()->getPlugin("PurePerms");
+    	//Check if player already hava a TempRank
+    	$senderName = strtolower($sender->getName());
+    	$rankInfo0 = $this->db->query("SELECT * FROM rankPlayers WHERE player = '$senderName';");
+    	$array0 = $rankInfo0->fetchArray(SQLITE3_ASSOC);
+    	if (!empty($array0)) {
+    		$sender->sendMessage("§cYou already have a TempRank");
+    		return;
+    	}
     	//Register player into database...
     	$codesFile = new Config($this->getDataFolder() . "codes.yml", Config::YAML);
     	$codesFileAll = $codesFile->getAll();
@@ -306,7 +328,6 @@ class Ranks extends PluginBase implements Listener {
     	$newRank = $PPerms->getGroup($nowRank);
     	$PPerms->setGroup($sender, $newRank);
     	//Get Rank Time
-    	$senderName = strtolower($sender->getName());
     	$rankInfo2 = $this->db->query("SELECT * FROM rankPlayers WHERE player = '$senderName';");
     	$array = $rankInfo2->fetchArray(SQLITE3_ASSOC);
     	if (!empty($array)) {
