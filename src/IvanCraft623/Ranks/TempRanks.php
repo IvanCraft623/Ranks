@@ -35,7 +35,7 @@ use pocketmine\utils\{Config, TextFormat as TE};
 
 class TempRanks extends Task {
 	
-	/** @var Loader */
+	/** @var Ranks */
 	protected $plugin;
 
 	/**
@@ -54,37 +54,40 @@ class TempRanks extends Task {
 		$rankInfo = $this->plugin->db->query("SELECT * FROM rankPlayers;");
 		$i = -1;
 		while ($resultArr = $rankInfo->fetchArray(SQLITE3_ASSOC)) {
-			$PPerms = $this->plugin->getServer()->getPluginManager()->getPlugin("PurePerms");
 			$j = $i + 1;
 			$rankPlayer = $resultArr['player'];
-			$player = $PPerms->getPlayer($rankPlayer);
-			$rankInfo = $this->plugin->db->query("SELECT * FROM rankPlayers WHERE player = '$rankPlayer';");
-			$array = $rankInfo->fetchArray(SQLITE3_ASSOC);
-			if (empty($array)) return;
-			$now = time();
-			$rankTime = $array['rankTime'];
-			$nowRank = $array['nowRank'];
-			$lastRank = $array['lastRank'];
-			if($rankTime < $now) {
-				if ($this->plugin->getConfig()->get("mode") === "setdefaultrank") {
-					$newRank = $PPerms->getDefaultGroup();
-				} elseif ($this->plugin->getConfig()->get("mode") === "setlastrank") {
-					$newRank = $PPerms->getGroup($lastRank);
-				} else { //This error will show as flow
-					$this->plugin->getLogger()->critical("{$this->plugin->getConfig()->get("mode")} is not a valid value in config.yml, correct it, it has not been possible to remove the time range to {$rankPlayer}");
-					if ($player instanceof Player) {
-						$player->sendMessage("§cAn unexpected error has occurred in the Ranks plugin configuration, contact an Admin to correct the error...");
-					}
-					return;
-				}
-				if ($player instanceof Player) {
-					$player->sendMessage("§eYour §b{$nowRank} §erank has expired!");
-				}
-				//$this->plugin->getLogger()->info("§aPlayer §b{$rankPlayer}§a Rank: §b{$nowRank} §ahas expired!");
-				$PPerms->setGroup($player, $newRank);
-				$this->plugin->db->query("DELETE FROM rankPlayers WHERE player = '$rankPlayer';");
-			}
+			$this->CheckExpireRank($rankPlayer);
 			$i = $i + 1;
+		}
+	}
+
+	public function CheckExpireRank ($rankPlayer) {
+		$PPerms = $this->plugin->getServer()->getPluginManager()->getPlugin("PurePerms");
+		$player = $PPerms->getPlayer($rankPlayer);
+		$rankInfo = $this->plugin->db->query("SELECT * FROM rankPlayers WHERE player = '$rankPlayer';");
+		$array = $rankInfo->fetchArray(SQLITE3_ASSOC);
+		$now = time();
+		$rankTime = $array['rankTime'];
+		$nowRank = $array['nowRank'];
+		$lastRank = $array['lastRank'];
+		if($rankTime < $now) {
+			if ($this->plugin->getConfig()->get("mode") === "setdefaultrank") {
+				$newRank = $PPerms->getDefaultGroup();
+			} elseif ($this->plugin->getConfig()->get("mode") === "setlastrank") {
+				$newRank = $PPerms->getGroup($lastRank);
+			} else { //This error will show as flow
+				$this->plugin->getLogger()->critical("{$this->plugin->getConfig()->get("mode")} is not a valid value in config.yml, correct it, it has not been possible to remove the time range to {$rankPlayer}");
+				if ($player instanceof Player) {
+					$player->sendMessage("§cAn unexpected error has occurred in the Ranks plugin configuration, contact an Admin to correct the error...");
+				}
+				return;
+			}
+			if ($player instanceof Player) {
+				$player->sendMessage("§eYour §b{$nowRank} §erank has expired!");
+			}
+			//$this->plugin->getLogger()->info("§aPlayer §b{$rankPlayer}§a Rank: §b{$nowRank} §ahas expired!");
+			$PPerms->setGroup($player, $newRank);
+			$this->plugin->db->query("DELETE FROM rankPlayers WHERE player = '$rankPlayer';");
 		}
 	}
 }
