@@ -8,7 +8,7 @@ Command | Description | Permission
 `/ranks settemprank <player> <rank> <time in days>` | Set a TempRank to a player. | rank.cmd.settemprank
 `/ranks createcode <code> <rank> <max uses> <time in days>` | Create a code to claim a rank. | rank.cmd.createcode
 `/ranks deletecode <code>` | Delete a code. | rank.cmd.deletecode
-`/ranks manage` | Open an UI to manage | rank.cmd.manage
+`/ranks manage` | Open an UI to manage. | rank.cmd.manage
 `/ranks claim` | Open an UI to claim a code | None
 
 # Config
