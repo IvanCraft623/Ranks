@@ -46,6 +46,8 @@ class Ranks extends PluginBase implements Listener {
 
 	public $codeName = [];
 
+	public $targetPlayer = [];
+
 	public $targetRank = [];
 
 	public $targetCode = [];
@@ -62,7 +64,7 @@ class Ranks extends PluginBase implements Listener {
         $this->getConfig()->get("Config Version");
 	}
 
-	public function onCommand(CommandSender $sender, Command $cmd, string $label,array $args) : bool {
+	public function onCommand(CommandSender $sender, Command $cmd, string $label, array $args) : bool {
 		switch ($cmd->getName()) {
 			case 'ranks':
 				if(isset($args[0])) {
@@ -75,12 +77,16 @@ class Ranks extends PluginBase implements Listener {
 							}
 						break;
 
-						case 'manage': //TODO!
+						case 'manage':
 							if (!$sender->hasPermission("rank.cmd.manage")) {
 								$sender->sendMessage("§cYou dont have permission to use this command!");
 								return true;
 							}
-							$sender->sendMessage("§cThis function is under development, please wait for it");
+							if ($sender instanceof Player) {
+								$this->RanksManagerUI($sender);
+							} else{
+								$sender->sendMessage("§cYou can only use this command in the game!");
+							}
 						break;
 
 						case 'settemprank':
@@ -102,19 +108,12 @@ class Ranks extends PluginBase implements Listener {
 									$sender->sendMessage("§cRank {$args[2]} does NOT exist!");
 									return true;
 								}
-								if(!is_numeric($args[3]) || $args[3] === "0") {
+								if(!is_numeric($args[3]) || $args[3] <= 0) {
 									$sender->sendMessage("§cTime must be a valid number!");
 									return true;
 								}
-								//Register into database
-								$rankInfo = $this->db->prepare("INSERT OR REPLACE INTO rankPlayers (player, rankTime, lastRank, nowRank) VALUES (:player, :rankTime, :lastRank, :nowRank);");
-								$rankInfo->bindValue(":player", $playerName2);
-								$rankInfo->bindValue(":rankTime", $rankTime);
-								$rankInfo->bindValue(":lastRank", $lastRank);
-								$rankInfo->bindValue(":nowRank", $group);
-								$rankInfo->execute();
 								//Set rank to player
-								$PPerms->setGroup($player, $group);
+								$this->setTempRank($playerName2, $rankTime, $args[2]);
 								//Get Rank Time
 								$rankInfo2 = $this->db->query("SELECT * FROM rankPlayers WHERE player = '$playerName2';");
     							$array = $rankInfo2->fetchArray(SQLITE3_ASSOC);
@@ -148,7 +147,11 @@ class Ranks extends PluginBase implements Listener {
     								);
 								}
 							} else {
-								$sender->sendMessage("§eUse:§a /ranks settemprank <player> <rank> <time in days>");
+								if ($sender instanceof PLayer) {
+									$this->setTempRankUI($sender);
+								} else {
+									$sender->sendMessage("§eUse:§a /ranks settemprank <player> <rank> <time in days>");
+								}
 							}
 						break;
 
@@ -185,7 +188,7 @@ class Ranks extends PluginBase implements Listener {
 										$sender->sendMessage("§cMax uses must be numeric");
 										return true;
 									}
-									if(!is_numeric($args[4]) || $args[4] === "0") {
+									if(!is_numeric($args[4]) || $args[4] <= 0) {
 										$sender->sendMessage("§cTime to expire the rank must be a valid number");
 										return true;
 									}
@@ -224,7 +227,7 @@ class Ranks extends PluginBase implements Listener {
 							} else {
 								if ($this->checkCodeExist($args[1])) {
 									$this->deleteCode($args[1]);
-									$sender->sendMessage("§bYou have delete {$args[1]} code!");
+									$sender->sendMessage("§bYou have §cdeleted§b {$args[1]} code!");
 								} else {
 									$sender->sendMessage("§c{$args[1]} code does not exist!");
 								}
@@ -248,15 +251,15 @@ class Ranks extends PluginBase implements Listener {
 									"§eUse:§a /ranks settemprank §7(Set a TempRank to a player.)"."\n".
 									"§eUse:§a /ranks createcode §7(Create a code to claim a rank.)"."\n".
 									"§eUse:§a /ranks deletecode §7(Delete a code.)"."\n".
-									"§eUse:§a /ranks manage §7(Coming soon...)"."\n"."\n".
+									"§eUse:§a /ranks manage §7(Open an UI to manage.)"."\n"."\n".
 									"§eUse:§a /ranks claim §7(Open an UI to claim a code.)"."\n".
 									"§eUse:§a /ranks credits §7(view credits)"
 								);
 							} else {
 								$sender->sendMessage(
 									"§a---- §bRanks Commands §a----"."\n"."\n".
-									"§eUse:§a /ranks claim §7(claim a rank)"."\n".
-									"§eUse:§a /ranks credits §7(view credits)"
+									"§eUse:§a /ranks claim §7(Open an UI to claim a code.)"."\n".
+									"§eUse:§a /ranks credits §7(View credits.)"
 								);
 							}
 						break;
@@ -265,16 +268,18 @@ class Ranks extends PluginBase implements Listener {
 					if ($sender->hasPermission("rank.cmd.settemprank")) {
 						$sender->sendMessage(
 							"§a---- §bRank Commands §a----"."\n"."\n".
-							"§eUse:§a /ranks settemprank [Player] §7(open an ui to set temp rank)"."\n".
-							"§eUse:§a /ranks createcode (create a code to claim a rank)"."\n".
-							"§eUse:§a /ranks deletecode (delete a code)"."\n".
-							"§eUse:§a /ranks manage §7(open an ui to manage)"."\n"."\n".
-							"§eUse:§a /ranks claim §7(claim a rank)"
+							"§eUse:§a /ranks settemprank §7(Set a TempRank to a player.)"."\n".
+							"§eUse:§a /ranks createcode §7(Create a code to claim a rank.)"."\n".
+							"§eUse:§a /ranks deletecode §7(Delete a code.)"."\n".
+							"§eUse:§a /ranks manage §7(Open an UI to manage.)"."\n"."\n".
+							"§eUse:§a /ranks claim §7(Open an UI to claim a code.)"."\n".
+							"§eUse:§a /ranks credits §7(view credits)"
 						);
 					} else {
 						$sender->sendMessage(
 							"§a---- §bSurvival Commands §a----"."\n"."\n".
-							"§eUse:§a /ranks claim §7(claim a rank)"
+							"§eUse:§a /ranks claim §7(Open an UI to claim a code.)"."\n".
+							"§eUse:§a /ranks credits §7(View credits.)"
 						);
 					}
 				}
@@ -284,7 +289,7 @@ class Ranks extends PluginBase implements Listener {
 	}
 
 	public function claimCodeUI($sender) {
-        $form =  new CustomForm(function (Player $sender, array $data = null) {
+        $form = new CustomForm(function (Player $sender, array $data = null) {
             if ($data === null){
                 return true;
             }
@@ -302,39 +307,32 @@ class Ranks extends PluginBase implements Listener {
 
     public function claimCode ($sender, $codeName) {
     	$PPerms = $this->getServer()->getPluginManager()->getPlugin("PurePerms");
-    	//Check if player already hava a TempRank
     	$senderName = strtolower($sender->getName());
-    	$rankInfo0 = $this->db->query("SELECT * FROM rankPlayers WHERE player = '$senderName';");
-    	$array0 = $rankInfo0->fetchArray(SQLITE3_ASSOC);
-    	if (!empty($array0)) {
+    	$rankInfo = $this->db->query("SELECT * FROM rankPlayers WHERE player = '$senderName';");
+    	$array = $rankInfo->fetchArray(SQLITE3_ASSOC);
+    	//Check if player already have a TempRank
+    	if (!empty($array)) {
     		$sender->sendMessage("§cYou already have a TempRank");
     		return;
     	}
-    	//Register player into database...
+    	//Set Rank to Player...
     	$codesFile = new Config($this->getDataFolder() . "codes.yml", Config::YAML);
     	$codesFileAll = $codesFile->getAll();
     	$now = time();
     	$day = ($codesFileAll["{$codeName}"]["RankExpTime"] * 86400);
     	$rankTime = $now + $day;
-    	$lastRank = $PPerms->getUserDataMgr($sender)->getGroup($sender);
-    	$nowRank = $codesFileAll["{$codeName}"]["Rank"];
-    	$rankInfo = $this->db->prepare("INSERT OR REPLACE INTO rankPlayers (player, rankTime, lastRank, nowRank) VALUES (:player, :rankTime, :lastRank, :nowRank);");
-    	$rankInfo->bindValue(":player", strtolower($sender->getName()));
-    	$rankInfo->bindValue(":rankTime", $rankTime);
-    	$rankInfo->bindValue(":lastRank", $lastRank);
-    	$rankInfo->bindValue(":nowRank", $nowRank);
-    	$rankInfo->execute();
-    	//Set Rank to Player...
-    	$newRank = $PPerms->getGroup($nowRank);
-    	$PPerms->setGroup($sender, $newRank);
+    	$newRank = $codesFileAll["{$codeName}"]["Rank"];
+    	if ($this->setTempRank($senderName, $rankTime, $newRank) === "Error") {
+    		return;
+    	}
     	//Get Rank Time
-    	$rankInfo2 = $this->db->query("SELECT * FROM rankPlayers WHERE player = '$senderName';");
-    	$array = $rankInfo2->fetchArray(SQLITE3_ASSOC);
+    	$rankInfo = $this->db->query("SELECT * FROM rankPlayers WHERE player = '$senderName';");
+    	$array = $rankInfo->fetchArray(SQLITE3_ASSOC);
     	if (!empty($array)) {
-    		$rankTime2 = $array['rankTime'];
-    		$nowRank2 = $array['nowRank'];
-    		if($rankTime2 > $now){
-    			$remainingTime = $rankTime2 - $now;
+    		$rankTime = $array['rankTime'];
+    		$nowRank = $array['nowRank'];
+    		if($rankTime > $now){
+    			$remainingTime = $rankTime - $now;
     			$day = floor($remainingTime / 86400);
     			$hourSeconds = $remainingTime % 86400;
     			$hour = floor($hourSeconds / 3600);
@@ -359,7 +357,7 @@ class Ranks extends PluginBase implements Listener {
     	$sender->sendMessage(
     		"§a---- §bCongratulations §a----"."\n"."\n".
     		"§eYou have successfully claimed your rank!"."\n".
-    		"§aRank:§b {$nowRank2}"."\n".
+    		"§aRank:§b {$nowRank}"."\n".
     		"§aTime:§b {$day} day(s), {$hour} hour(s), {$minute} minute(s), {$second} second(s)"
     	);
     	//Check if maximum uses have been reached
@@ -371,16 +369,82 @@ class Ranks extends PluginBase implements Listener {
     public function CheckIfMaxUsesReached ($codeName) {
     	$codesFile = new Config($this->getDataFolder() . "codes.yml", Config::YAML);
     	$codesFileAll = $codesFile->getAll();
-    	if ($codesFileAll["{$codeName}"]["Uses"] >= $codesFileAll["{$codeName}"]["MaxUses"]) {
+    	if ($codesFileAll["{$codeName}"]["Uses"] === $codesFileAll["{$codeName}"]["MaxUses"]) {
 			return true;
 		} else {
 			return false;
 		}
-
     }
 
-	public function ListCodesUI($sender){
-		$form =  new SimpleForm(function (Player $sender, $data = null) {
+    public function RanksManagerUI ($sender) {
+        $form = new SimpleForm(function (Player $sender, int $data = null) {
+            $result = $data;
+            if($result === null){
+                return true;
+            }             
+            switch ($result) {
+            	case 0:
+                    $this->codesManagerUI($sender);
+            	break;
+
+                case 1:
+                    $this->setTempRankUI($sender);
+            	break;
+
+            	case 2:
+            	$sender->sendMessage("§cThis function is under development, please wait for it")
+                    #$this->UnsetTempRankUI($sender); //TODO
+            	break;
+
+            	case 3:
+            		# CloseUI
+            	break;
+            }
+        });
+        $form->setTitle("§9§lRanks Manager");
+        $form->setContent("TempRank Manager");
+        $form->addButton("§l§9Codes",1,"https://raw.githubusercontent.com/IvanCraft623/EnderGames-Images/main/Images/Minecraft-Icons/Special%20Icons/folder%20mojang.png");
+        $form->addButton("§l§9Set Temp Rank",1,"https://raw.githubusercontent.com/IvanCraft623/EnderGames-Images/main/Images/Ranks%20Manager/clock.png");
+        $form->addButton("§l§9Unset Temp Rank",1,"https://raw.githubusercontent.com/IvanCraft623/EnderGames-Images/main/Images/Ranks%20Manager/clock.png");
+        $form->addButton("§l§9Back",0,"textures/items/compass_item");
+        $form->sendToPlayer($sender);
+    }
+
+    public function codesManagerUI ($sender) {
+        $form = new SimpleForm(function (Player $sender, int $data = null) {
+            $result = $data;
+            if($result === null){
+                return true;
+            }             
+            switch ($result) {
+            	case 0:
+                    $this->claimCodeUI($sender);
+            	break;
+
+                case 1:
+                    $this->createCode1UI($sender);
+            	break;
+
+            	case 2:
+                    $this->ListCodesUI($sender);
+            	break;
+
+            	case 3:
+            		$this->RanksManagerUI($sender);
+            	break;
+            }
+        });
+        $form->setTitle("§9§lRanks Manager");
+        $form->setContent("TempRank Manager");
+        $form->addButton("§l§9Claim a Code",1,"https://raw.githubusercontent.com/IvanCraft623/EnderGames-Images/main/Images/Ranks%20Manager/crown.png");
+        $form->addButton("§l§9Create a Code",1,"https://raw.githubusercontent.com/IvanCraft623/EnderGames-Images/main/Images/Minecraft-Icons/Special%20Icons/folder%20mojang.png");
+        $form->addButton("§l§cDelete a Code\n§7List of Codes",0,"textures/ui/icon_trash");
+        $form->addButton("§l§9Back",0,"textures/items/compass_item");
+        $form->sendToPlayer($sender);
+    }
+
+	public function ListCodesUI ($sender){
+		$form = new SimpleForm(function (Player $sender, $data = null) {
 			$target = $data;
 			if($target === null){
 				return true;
@@ -399,7 +463,7 @@ class Ranks extends PluginBase implements Listener {
 	}
 
 	public function InfoCodeUI($sender){
-        $form =  new SimpleForm(function (Player $sender, int $data = null) {
+        $form = new SimpleForm(function (Player $sender, int $data = null) {
             $result = $data;
             if($result === null){
                 return true;
@@ -434,7 +498,7 @@ class Ranks extends PluginBase implements Listener {
     }
 
 	public function createCode1UI($sender) {
-        $form =  new CustomForm(function (Player $sender, $data = null) {
+        $form = new CustomForm(function (Player $sender, $data = null) {
             if($data === null){
                 return true;
             }
@@ -457,7 +521,7 @@ class Ranks extends PluginBase implements Listener {
     }
 
     public function openRanksListUI($player){
-		$form =  new SimpleForm(function (Player $player, $data = null) {
+		$form = new SimpleForm(function (Player $player, $data = null) {
 			$target = $data;
 			if($target === null){
 				return true;
@@ -476,17 +540,17 @@ class Ranks extends PluginBase implements Listener {
 	}
 
 	public function createCode2UI($sender) {
-        $form =  new CustomForm(function (Player $sender, array $data = null) {
+        $form = new CustomForm(function (Player $sender, array $data = null) {
             if($data === null){
                 return true;
             }
-            if(!is_numeric($data[2])) {
+            if(!is_numeric($data[2])  ||  $data[2] < 0) {
             	$sender->sendMessage("§cMax uses must be numeric");
             	return;
             } elseif(!is_numeric($data[3])) {
             	$sender->sendMessage("§cTime to expire the code must be numeric");
             	return;
-            } elseif(!is_numeric($data[4]) || $data[4] === "0") {
+            } elseif(!is_numeric($data[4]) || $data[4] <= 0) {
             	$sender->sendMessage("§cTime to expire the rank must be a valid number");
             	return;
             }
@@ -513,6 +577,192 @@ class Ranks extends PluginBase implements Listener {
         $form->addInput("Time to expire the code:", "in development | does not work");
         $form->addInput("Time to expire the rank:", "in days..." );
         $form->sendToPlayer($sender);
+    }
+
+    public function setTempRankUI($sender){
+        $form = new SimpleForm(function (Player $sender, int $data = null) {
+            $result = $data;
+            if($result === null){
+                return true;
+            }             
+            switch ($result) {
+                case 0:
+                    $this->setTempRankOnlinePLayersUI($sender);
+            	break;
+
+            	case 1:
+                    $this->setTempRankWritePlayerUI($sender);
+            	break;
+
+            	case 1:
+                    $this->RanksManagerUI($sender);
+            	break;
+            }
+        });
+        $form->setTitle("§9§lRanks Manager");
+        $form->setContent("Select an option");
+        $form->addButton("§l§9List Online Players",0,"textures/ui/FriendsIcon");
+        $form->addButton("§l§9Write Player Name",0,"textures/ui/Friend1");
+        $form->addButton("§l§9Back",0,"textures/items/compass_item");
+        $form->sendToPlayer($sender);
+    }
+
+     public function setTempRankOnlinePLayersUI($sender){
+		$form = new SimpleForm(function (Player $sender, $data = null) {
+			$target = $data;
+			if($target === null){
+				return true;
+			}
+			$this->targetPlayer[$sender->getName()] = $target;
+			$this->setTempRank2UI($sender);
+		});
+		$form->setTitle("§9§lRanks Manager");
+		$form->setContent("§fSelect a Player");
+		foreach($this->getServer()->getOnlinePlayers() as $online){
+			$form->addButton($online->getName(), -1, "", $online->getName());
+		}
+		$form->sendToPlayer($sender);
+		return $form;
+	}
+
+	public function setTempRankWritePlayerUI($sender) {
+        $form = new CustomForm(function (Player $sender, array $data = null) {
+            if ($data === null){
+                return true;
+            }
+            $this->targetPlayer[$sender->getName()] = $data[1];
+			$this->setTempRank2UI($sender);
+        });
+        $form->setTitle("§9§lRanks Manager");
+        $form->addLabel("§fWrite Player Name...");
+        $form->addInput("Player:", "Steve123");
+        $form->sendToPlayer($sender);
+    }
+
+    public function setTempRank2UI($sender){
+		$form = new SimpleForm(function (Player $sender, $data = null) {
+			$target = $data;
+			if($target === null){
+				return true;
+			}
+			$this->targetRank[$sender->getName()] = $target;
+			$this->setTempRank3UI($sender);
+		});
+		$form->setTitle("§9§lRanks Manager");
+		$form->setContent("§fSelect a Rank for {$this->targetPlayer[$sender->getName()]}...");
+		$PPranks = $this->getServer()->getPluginManager()->getPlugin("PurePerms")->getGroups();
+		foreach($PPranks as $rank){
+			$form->addButton($rank, -1, "", $rank);
+		}
+		$form->sendToPlayer($sender);
+		return $form;
+	}
+
+	public function setTempRank3UI($sender) {
+        $form = new CustomForm(function (Player $sender, array $data = null) {
+            if ($data === null){
+                return true;
+            }
+            if (!is_numeric($data[1])) {
+            	$data[1] = "0";
+            }
+            if (!is_numeric($data[2])) {
+            	$data[2] = "0";
+            }
+            if (!is_numeric($data[3])) {
+            	$data[3] = "0";
+            }
+            if(!is_numeric($data[1]) || $data[1] < 0) {
+				$sender->sendMessage("§cDays must be a vallid number");
+				return;
+			}
+            if(!is_numeric($data[2]) || $data[2] < 0) {
+				$sender->sendMessage("§cHours must be a vallid number");
+				return;
+			}
+            if(!is_numeric($data[3]) || $data[3] < 0) {
+				$sender->sendMessage("§cMinutes must be a vallid number");
+				return;
+			}
+			//Calculate RankTime
+			$now = time();
+			$day = ($data[1] * 86400);
+			$hour = ($data[2] * 3600);
+			$min = ($data[3] * 60);
+			if (($day + $hour + $min) === 0) {
+				$sender->sendMessage("§cRankTime cannot be 0");
+				return;
+			}
+			$rankTime = $now + $day + $hour + $min;
+			//Set Rank to Player
+			$PPerms = $this->getServer()->getPluginManager()->getPlugin("PurePerms");
+			$player = $PPerms->getPlayer($this->targetPlayer[$sender->getName()]);
+			$playerName = strtolower($player->getName());
+			$newRank = $this->targetRank[$sender->getName()];
+			$this->setTempRank($playerName, $rankTime, $newRank);
+			//Get Rank Time 2
+			$rankInfo2 = $this->db->query("SELECT * FROM rankPlayers WHERE player = '$playerName';");
+    		$array = $rankInfo2->fetchArray(SQLITE3_ASSOC);
+    		if (!empty($array)) {
+    			$rankTime2 = $array['rankTime'];
+    			if($rankTime2 > $now){
+    				$remainingTime = $rankTime2 - $now;
+    				$day = floor($remainingTime / 86400);
+    				$hourSeconds = $remainingTime % 86400;
+    				$hour = floor($hourSeconds / 3600);
+    				$minuteSec = $hourSeconds % 3600;
+    				$minute = floor($minuteSec / 60);
+    				$remainingSec = $minuteSec % 60;
+    				$second = ceil($remainingSec);
+    			}
+    		}
+			//Send Message to Sender
+			$sender->sendMessage(
+				"§a---- §bYou have given a Temp rank! §a----"."\n"."\n".
+				"§ePlayer:§b {$player->getName()}"."\n".
+            	"§eRank:§b {$newRank}"."\n".
+            	"§eTime:§b {$day} day(s), {$hour} hour(s), {$minute} minute(s), {$second} second(s)"
+			);
+			//Send Message to Player that recive the Rank
+			if ($player instanceof Player) {
+				$player->sendMessage(
+    				"§a---- §bCongratulations §a----"."\n"."\n".
+    				"§eYour rank has been changed!"."\n".
+    				"§aRank:§b {$newRank}"."\n".
+    				"§aTime:§b {$day} day(s), {$hour} hour(s), {$minute} minute(s), {$second} second(s)"
+    			);
+			}
+        });
+        $form->setTitle("§9§lRanks Manager");
+        $form->addLabel("§fRank Expire Time...");
+        $form->addInput("Days:", "7");
+        $form->addInput("Hours:", "3");
+        $form->addInput("Minutes:", "2");
+        $form->sendToPlayer($sender);
+    }
+
+    public function setTempRank ($playerName, $rankTime, $newRank) {
+    	$PPerms = $this->getServer()->getPluginManager()->getPlugin("PurePerms");
+    	$player = $PPerms->getPlayer($playerName);
+    	//Check if specified Rank is a valid Rank...
+    	$newRank = $PPerms->getGroup($newRank);
+    	if ($newRank === null) {
+    		$this->getLogger()->critical("An unexpected error occurred giving a rank to {$playerName} (Probably the rank was deleted or never existed)");
+    		if ($player instanceof Player) {
+    			$player->sendMessage("§cAn unexpected error occurred trying give you a rank, contact to the Owner or Admin");
+    		}
+    		return "Error";
+    	}
+    	//Register player into database...
+    	$lastRank = $PPerms->getUserDataMgr($player)->getGroup($player);
+    	$rankInfo = $this->db->prepare("INSERT OR REPLACE INTO rankPlayers (player, rankTime, lastRank, nowRank) VALUES (:player, :rankTime, :lastRank, :nowRank);");
+    	$rankInfo->bindValue(":player", $playerName);
+    	$rankInfo->bindValue(":rankTime", $rankTime);
+    	$rankInfo->bindValue(":lastRank", $lastRank);
+    	$rankInfo->bindValue(":nowRank", $newRank);
+    	$rankInfo->execute();
+    	//Set Rank to Player...
+    	$PPerms->setGroup($player, $newRank);
     }
 
     public function deleteCode ($codeName) {
