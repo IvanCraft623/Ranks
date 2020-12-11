@@ -392,7 +392,7 @@ class Ranks extends PluginBase implements Listener {
             	break;
 
             	case 2:
-            	$sender->sendMessage("§cThis function is under development, please wait for it")
+            	$sender->sendMessage("§cThis function is under development, please wait for it");
                     #$this->UnsetTempRankUI($sender); //TODO
             	break;
 
