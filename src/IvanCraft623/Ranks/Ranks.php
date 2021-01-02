@@ -78,7 +78,7 @@ class Ranks extends PluginBase implements Listener {
 						break;
 
 						case 'manage':
-							if (!$sender->hasPermission("rank.cmd.manage")) {
+							if (!$sender->hasPermission("ranks.cmd.manage")) {
 								$sender->sendMessage("§cYou dont have permission to use this command!");
 								return true;
 							}
@@ -91,7 +91,7 @@ class Ranks extends PluginBase implements Listener {
 
 						case 'settemprank':
 							$PPerms = $this->getServer()->getPluginManager()->getPlugin("PurePerms");
-							if (!$sender->hasPermission("rank.cmd.settemprank")) {
+							if (!$sender->hasPermission("ranks.cmd.settemprank")) {
 								$sender->sendMessage("§cYou dont have permission to use this command!");
 								return true;
 							}
@@ -157,7 +157,7 @@ class Ranks extends PluginBase implements Listener {
 
 						case 'createcode':						
 							$PPerms = $this->getServer()->getPluginManager()->getPlugin("PurePerms");
-							if (!$sender->hasPermission("rank.cmd.createcode")) {
+							if (!$sender->hasPermission("ranks.cmd.createcode")) {
 								$sender->sendMessage("§cYou dont have permission to use this command!");
 								return true;
 							}
@@ -214,7 +214,7 @@ class Ranks extends PluginBase implements Listener {
 						break;
 
 						case 'deletecode':
-							if (!$sender->hasPermission("rank.cmd.deletecode")) {
+							if (!$sender->hasPermission("ranks.cmd.deletecode")) {
 								$sender->sendMessage("§cYou dont have permission to use this command!");
 								return true;
 							}
@@ -245,7 +245,7 @@ class Ranks extends PluginBase implements Listener {
 						break;
 						
 						default:
-							if ($sender->hasPermission("rank.cmd.settemprank")) {
+							if ($sender->hasPermission("ranks.cmd.settemprank")) {
 								$sender->sendMessage(
 									"§a---- §bRanks Commands §a----"."\n"."\n".
 									"§eUse:§a /ranks settemprank §7(Set a TempRank to a player.)"."\n".
@@ -265,7 +265,7 @@ class Ranks extends PluginBase implements Listener {
 						break;
 					}
 				} else {
-					if ($sender->hasPermission("rank.cmd.settemprank")) {
+					if ($sender->hasPermission("ranks.cmd.settemprank")) {
 						$sender->sendMessage(
 							"§a---- §bRank Commands §a----"."\n"."\n".
 							"§eUse:§a /ranks settemprank §7(Set a TempRank to a player.)"."\n".
