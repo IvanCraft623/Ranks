@@ -1,4 +1,10 @@
 # Ranks
+[![](https://poggit.pmmp.io/shield.state/Ranks)](https://poggit.pmmp.io/p/Ranks)
+[![](https://poggit.pmmp.io/shield.api/Ranks)](https://poggit.pmmp.io/p/Ranks)
+[![](https://poggit.pmmp.io/shield.dl.total/Ranks)](https://poggit.pmmp.io/p/Ranks)
+
+[Download](https://poggit.pmmp.io/r/112465/Ranks.phar)
+
 Ranks by IvanCraft623 is a plugin that with conjunction of [PurePerms](https://github.com/poggit-orphanage/PurePerms/) allow set Temporal Ranks to players.
 It is necessary have the [PurePerms](https://github.com/poggit-orphanage/PurePerms/) plugin!
 
